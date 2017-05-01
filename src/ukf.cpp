@@ -99,7 +99,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   */
   if (!is_initialized_) {
     // initialize state vector x and covariance matrix P
-    cout << "\n Init start\n----------------" << endl;
     P_ = MatrixXd::Identity(5, 5);
 
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
@@ -136,15 +135,25 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     is_initialized_ = true;
     return;
   }
-  cout << "\n Init start2 \n----------------" << endl;
-  double dt = meas_package.timestamp_ - time_us_;
-  cout << "\n Init finished \n----------------" << endl;
-  Prediction( dt );
-  if(use_radar_)
-    UpdateRadar(meas_package);
 
-  if(use_laser_)
+  double dt = meas_package.timestamp_ - time_us_;
+
+  Prediction( dt );
+  if(meas_package.sensor_type_ == MeasurementPackage::RADAR){
+    use_radar_ = true;
+    use_laser_ = false;
+    UpdateRadar(meas_package);
+  } else if(meas_package.sensor_type_ == MeasurementPackage::LASER)
+  {
+    use_radar_ = false;
+    use_laser_ = true;
     UpdateLidar(meas_package);
+  }else
+  {
+    use_radar_ = false;
+    use_laser_ = false;
+    cout<<"WARNING: unkown sensor type!"<<endl;
+  }
 
 }
 
@@ -183,7 +192,7 @@ void UKF::Prediction(double delta_t) {
 
   //create square root matrix
   MatrixXd L = P_aug.llt().matrixL();
-  cout << "\n Start Prediction 2\n----------------" << endl;
+
   //create augmented sigma points
   Xsig_aug.col(0)  = x_aug;
   for (int i = 0; i< n_aug_; i++)
@@ -195,7 +204,7 @@ void UKF::Prediction(double delta_t) {
   // Predict augmented Sigma points
   double p_x, p_y, v, yaw, yawd, nu_a, nu_yawdd, px_p, py_p;
   //predict sigma points
-  cout << "\n predict sigma points\n----------------" << endl;
+
   for (int i = 0; i< 2*n_aug_+1; i++)
   {
     //extract values for better readability
@@ -237,7 +246,6 @@ void UKF::Prediction(double delta_t) {
     Xsig_pred_(3,i) = yaw_p;
     Xsig_pred_(4,i) = yawd_p;
   }
-  cout << "\n Start Predict mean and covariance matrix \n----------------" << endl;
   //Predict mean and covariance matrix
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
     x_ = x_+ weights_(i) * Xsig_pred_.col(i);
@@ -268,7 +276,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
-  cout << "\n LIDAR update \n----------------" <<meas_package.sensor_type_ << endl;
+  cout << "\n LIDAR update \n----------------" << endl;
   MatrixXd H_laser_ = MatrixXd(2, 5);
   MatrixXd R_laser_ = MatrixXd(2,2);
   H_laser_ << 1, 0, 0, 0, 0,
@@ -277,14 +285,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
               0, 0.0225;
   VectorXd z_pred = H_laser_ * x_;
 
-  cout << z_pred <<"\n Raw:" <<endl;
-  cout << meas_package.raw_measurements_ << endl;
   VectorXd y = meas_package.raw_measurements_ - z_pred;
-  cout << "\n LIDAR update 1\n----------------" << endl;
+
   MatrixXd Ht = H_laser_.transpose();
-  cout << "\n LIDAR update 2\n----------------" << endl;
   MatrixXd S = H_laser_ * P_ * Ht + R_laser_;
-  cout << "\n LIDAR update 3\n----------------" << endl;
   MatrixXd Si = S.inverse();
   MatrixXd K =  P_ * Ht * Si;
 

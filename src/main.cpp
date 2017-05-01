@@ -160,7 +160,6 @@ int main(int argc, char* argv[]) {
   Tools tools;
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion
-    cout<<"New measurements"<<endl;
     ukf.ProcessMeasurement(measurement_pack_list[k]);
 
     // timestamp
@@ -218,12 +217,12 @@ int main(int argc, char* argv[]) {
     estimations.push_back(ukf_x_cartesian_);
     ground_truth.push_back(gt_pack_list[k].gt_values_);
     //Visualize RMSE in real-time
-    //cout << "Accuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
+    cout << "Accuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
   }
 
   // compute the accuracy (RMSE)
 
-  //cout << "RMSE" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
+  cout << "RMSE" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
 
   // close files
   if (out_file_.is_open()) {
