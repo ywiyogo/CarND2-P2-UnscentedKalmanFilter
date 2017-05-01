@@ -142,14 +142,14 @@ int main(int argc, char* argv[]) {
   size_t number_of_measurements = measurement_pack_list.size();
 
   // column names for output file
-  out_file_ << "time_stamp" << "\t";  
+  out_file_ << "time_stamp" << "\t";
   out_file_ << "px_state" << "\t";
   out_file_ << "py_state" << "\t";
   out_file_ << "v_state" << "\t";
   out_file_ << "yaw_angle_state" << "\t";
   out_file_ << "yaw_rate_state" << "\t";
   out_file_ << "sensor_type" << "\t";
-  out_file_ << "NIS" << "\t";  
+  out_file_ << "NIS" << "\t";
   out_file_ << "px_measured" << "\t";
   out_file_ << "py_measured" << "\t";
   out_file_ << "px_ground_truth" << "\t";
@@ -157,9 +157,10 @@ int main(int argc, char* argv[]) {
   out_file_ << "vx_ground_truth" << "\t";
   out_file_ << "vy_ground_truth" << "\n";
 
-
+  Tools tools;
   for (size_t k = 0; k < number_of_measurements; ++k) {
     // Call the UKF-based fusion
+    cout<<"New measurements"<<endl;
     ukf.ProcessMeasurement(measurement_pack_list[k]);
 
     // timestamp
@@ -211,17 +212,18 @@ int main(int argc, char* argv[]) {
     float y_estimate_ = ukf.x_(1);
     float vx_estimate_ = ukf.x_(2) * cos(ukf.x_(3));
     float vy_estimate_ = ukf.x_(2) * sin(ukf.x_(3));
-    
+
     ukf_x_cartesian_ << x_estimate_, y_estimate_, vx_estimate_, vy_estimate_;
-    
+
     estimations.push_back(ukf_x_cartesian_);
     ground_truth.push_back(gt_pack_list[k].gt_values_);
-
+    //Visualize RMSE in real-time
+    //cout << "Accuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
   }
 
   // compute the accuracy (RMSE)
-  Tools tools;
-  cout << "RMSE" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
+
+  //cout << "RMSE" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
 
   // close files
   if (out_file_.is_open()) {
