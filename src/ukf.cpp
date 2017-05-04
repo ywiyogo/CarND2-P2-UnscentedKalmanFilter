@@ -36,10 +36,10 @@ UKF::UKF() {
   // the fastest measured linear acceleration for a street legal sports car
   // is currently 0 to 60 mph in 2.2 seconds. 0 to 60 mph in 2.2 seconds is about 12​m/s2
   // 12m/s2 = 2*std_a -> std_a = 12/2 = 6
-  std_a_ = 10;    //given was 30
+  std_a_ = 4;    //given was 30
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 4;  //given was 30
+  std_yawdd_ = 6;  //given was 30
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -82,8 +82,8 @@ UKF::UKF() {
   R_laser_ = MatrixXd(2,2);
   H_laser_ << 1, 0, 0, 0, 0,
           0, 1, 0, 0, 0;
-  R_laser_ << 0.0225, 0,
-          0, 0.0225;
+  R_laser_ << std_laspx_, 0,
+          0, std_laspy_;
 
   NIS_radar_ = 0;
 
@@ -118,7 +118,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       double vx = rho_dot * cos(phi);
       double vy = rho_dot * sin(phi);
       double v = sqrt(vx*vx + vy*vy);
-      double psi = atan2(vy, vx);   // or 0?
+      double psi = atan2(vy, vx);
 
       x_ << px, py, v, psi, 0;
 
@@ -128,7 +128,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       cout << meas_package.raw_measurements_ << endl;
 
 
-      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 0, 0, 0;
+      x_ << meas_package.raw_measurements_[0], meas_package.raw_measurements_[1], 4, 0, 0;
     }
     else
     {
@@ -142,7 +142,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
   double dt = (meas_package.timestamp_ - time_us_) / 1000000.;
   time_us_ = meas_package.timestamp_;
-  if (dt > 0.05)
+  if (dt > 0.07)
     cout << "### Caution, dt is: "<< dt <<"\n"<< endl;
 
   Prediction(dt);
@@ -169,8 +169,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     cout<<"WARNING: unknown sensor type!"<<endl;
   }
 
-  cout << "x_ "<< x_ <<"\n"<< endl;
-  cout << "P_ "<< P_ <<"\n"<< endl;
+/*  cout << "x_ "<< x_ <<"\n"<< endl;
+  cout << "P_ "<< P_ <<"\n"<< endl;*/
 }
 
 /**
@@ -325,11 +325,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
-  cout << "\n LIDAR update \n----------------" << endl;
 
   VectorXd z_pred = H_laser_ * x_;
 
-  VectorXd y = meas_package.raw_measurements_ - z_pred;
+  VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
 
   MatrixXd Ht = H_laser_.transpose();
   MatrixXd S = H_laser_ * P_ * Ht + R_laser_;
@@ -337,11 +336,15 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   MatrixXd K =  P_ * Ht * Si;
 
   //new state
-  x_ = x_ + (K * y);
+  x_ = x_ + (K * z_diff);
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
 
   P_ = (I - K * H_laser_) * P_;
+  NIS_laser_ = z_diff.transpose() * S.inverse() * z_diff;
+  if (NIS_laser_ > 2)
+    cout << "NIS_laser_: " <<NIS_laser_<< endl;
+
 }
 
 /**
@@ -360,7 +363,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   // -------------------
   // Predict measurement
   // -------------------
-  cout << "\n RADAR update \n----------------" << endl;
   //create matrix for sigma points in measurement space, 3 rows for radar dim
   int n_z = 3;
   static MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
@@ -456,4 +458,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   x_ = x_ + K * z_diff;
   P_ = P_ - K * S * K.transpose();
   NIS_radar_ = z_diff.transpose() * S.inverse() * z_diff;
+  if (NIS_radar_ > 2)
+    cout << "NIS_radar_: " <<NIS_radar_<< endl;
 }

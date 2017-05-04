@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
     estimations.push_back(ukf_x_cartesian_);
     ground_truth.push_back(gt_pack_list[k].gt_values_);
     //Visualize RMSE in real-time
-    cout << "Accuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
+    //cout << "Accuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
   }
 
   // compute the accuracy (RMSE)
