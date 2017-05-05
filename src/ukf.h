@@ -76,6 +76,7 @@ public:
   //-------------------
   //EKF variables
   //-------------------
+  MatrixXd R_radar_;
   MatrixXd H_laser_;
   MatrixXd R_laser_;
   /**
@@ -100,11 +101,6 @@ public:
    * @param delta_t Time between k and k+1 in s
    */
   void Prediction(double delta_t);
-    /**
-   * Prediction Lidar measurement like EKF
-   * @param delta_t Time between k and k+1 in s
-   */
-/*  void PredictionLidar(double delta_t);*/
 
   /**
    * Updates the state and the state covariance matrix using a laser measurement
